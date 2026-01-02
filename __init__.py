@@ -37,6 +37,9 @@ import ssl
 from aqt.utils import showText
 from aqt.qt import *
 from aqt import mw
+import os
+import sys
+import logging
 import urllib
 try:
     import urllib2
@@ -48,6 +51,25 @@ try:
 except Exception:
     from PyQt5.QtCore import pyqtSignal
 
+ADDON_DIR = os.path.dirname(__file__)
+VENDOR_DIR = os.path.join(ADDON_DIR, "vendor")
+
+if os.path.isdir(VENDOR_DIR) and VENDOR_DIR not in sys.path:
+    sys.path.insert(0, VENDOR_DIR)
+
+# Suppress noisy TLS client loader logs ("Successfully loaded TLS library") so Anki doesn't treat them as errors. 
+tls_logger = logging.getLogger("TLSLibrary")
+tls_logger.setLevel(logging.ERROR)
+tls_logger.propagate = False
+if not tls_logger.handlers:
+    tls_logger.addHandler(logging.NullHandler())
+
+try:
+    from tls_requests import get as tls_get, HTTPError as TLS_HTTP_ERROR
+except ModuleNotFoundError:
+    tls_get = requests.get
+    from requests.exceptions import HTTPError as TLS_HTTP_ERROR
+
 __window = None
 
 # Anki
@@ -56,6 +78,7 @@ requests.packages.urllib3.disable_warnings()
 headers = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
 }
+TLS_IDENTIFIER = "chrome_120"
 
 # Create an SSL context with certificate verification disabled
 context = ssl.create_default_context()
@@ -671,8 +694,8 @@ class QuizletDownloader(QThread):
                     url = self.url if proxyRetry else 'https://quizlet-proxy.proto.click/quizlet-folders?url=' + \
                         urllib.parse.quote(self.url, safe='()*!\'')
 
-                    r = requests.get(url, verify=False,
-                                    headers=headers, cookies=cookies)
+                    #r = requests.get(url, verify=False, headers=headers, cookies=cookies)
+                    r = tls_get(url, tls_identifier=TLS_IDENTIFIER, headers=headers, cookies=cookies)
                     r.raise_for_status()
                     page_html = r.text
                     self.folderExtracted.emit(page_html)
@@ -683,8 +706,8 @@ class QuizletDownloader(QThread):
                         url = self.url if proxyRetry else 'https://quizlet-proxy.proto.click/quizlet-deck?url=' + \
                             urllib.parse.quote(self.url, safe='()*!\'')
                         print(url)
-                        r = requests.get(url, verify=False,
-                                        headers=headers, cookies=cookies)
+                        #r = requests.get(url, verify=False, headers=headers, cookies=cookies)
+                        r = tls_get(url, tls_identifier=TLS_IDENTIFIER, headers=headers, cookies=cookies)
                         r.raise_for_status()
                         page_html = r.text
 
@@ -764,7 +787,7 @@ class QuizletDownloader(QThread):
 
                     self.results['title'] = title
 
-            except requests.HTTPError as e:
+            except TLS_HTTP_ERROR as e:
                 if proxyRetry == True:
                     proxyRetry = False
                     continue
