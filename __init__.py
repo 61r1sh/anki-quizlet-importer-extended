@@ -693,8 +693,6 @@ class QuizletDownloader(QThread):
                 if self.quizletDeckID == 'folder':
                     url = self.url if proxyRetry else 'https://quizlet-proxy.proto.click/quizlet-folders?url=' + \
                         urllib.parse.quote(self.url, safe='()*!\'')
-
-                    #r = requests.get(url, verify=False, headers=headers, cookies=cookies)
                     r = tls_get(url, tls_identifier=TLS_IDENTIFIER, headers=headers, cookies=cookies)
                     r.raise_for_status()
                     page_html = r.text
@@ -706,7 +704,6 @@ class QuizletDownloader(QThread):
                         url = self.url if proxyRetry else 'https://quizlet-proxy.proto.click/quizlet-deck?url=' + \
                             urllib.parse.quote(self.url, safe='()*!\'')
                         print(url)
-                        #r = requests.get(url, verify=False, headers=headers, cookies=cookies)
                         r = tls_get(url, tls_identifier=TLS_IDENTIFIER, headers=headers, cookies=cookies)
                         r.raise_for_status()
                         page_html = r.text
