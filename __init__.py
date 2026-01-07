@@ -40,8 +40,11 @@ from aqt import mw
 import urllib
 try:
     import urllib2
+    URLError = urllib2.URLError
 except Exception:
     import urllib.request as urllib2
+    import urllib.error
+    URLError = urllib.error.URLError
     
 try:
     from PyQt6.QtCore import pyqtSignal
@@ -523,7 +526,7 @@ class QuizletWindow(QWidget):
         while True:
             try:
                 return download_media(url, file_name, request_headers)
-            except urllib2.HTTPError as e:
+            except (urllib2.HTTPError, URLError) as e:
                 if fallback and not fallback_call:
                     fallback_call = True
                     url = "https://quizlet-proxy.proto.click/quizlet-media?url={0}".format(urllib.parse.quote(url))
@@ -532,7 +535,11 @@ class QuizletWindow(QWidget):
                 if skip_errors:
                     return None
                 else:
-                    debug(f"throwing exception {e.code}")
+                    error_code = getattr(e, 'code', None)
+                    if error_code:
+                        debug(f"throwing exception {error_code}")
+                    else:
+                        debug(f"throwing exception {e}")
                     raise e
 
 
