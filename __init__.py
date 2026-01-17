@@ -190,11 +190,13 @@ class QuizletWindow(QWidget):
         self.value_incoming_html.setPlaceholderText(
             """Enter page html if you constantly receive errors
 
-1.Enter the url
-2.Click on the 'Open page' button
-3.Right click, 'View page source'
-4.Copy the html
-5.If you don't need audio, uncheck the box
+1. Enter the url in 'Quizlet URL:'
+2. Click 'Open html' (opens webpage)
+3. Right-click, then click 'View page source'
+4. Copy the all HTML and paste into 'Page html:'
+5. Click 'Import Deck'
+
+Note: 'Page html' does not support Quizlet folder import
 """)
 
         self.label_incoming_html = QLabel("Page html:")
@@ -224,7 +226,6 @@ class QuizletWindow(QWidget):
 
         self.box_download_audio = QHBoxLayout()
         self.value_download_audio = QCheckBox("", self)
-        self.value_download_audio.toggle()
         self.label_download_audio = QLabel("Download audio:")
         self.label_download_audio.setMinimumWidth(100)
         self.box_download_audio.addWidget(self.label_download_audio)
@@ -238,11 +239,12 @@ class QuizletWindow(QWidget):
 
         self.box_skip_errors = QHBoxLayout()
         self.value_skip_errors = QCheckBox("", self)
+        self.value_skip_errors.toggle()
         self.value_skip_errors.setToolTip(
-            'Will skip audio/images download errors')
+            'Will skip audio/images download errors (recommend: Enabled)')
         self.label_skip_errors = QLabel("Skip errors:")
         self.label_skip_errors.setToolTip(
-            'Will skip audio/images download errors')
+            'Will skip audio/images download errors (recommend: Enabled)')
         self.box_skip_errors.addWidget(self.label_skip_errors)
         self.box_skip_errors.addWidget(self.value_skip_errors)
 
@@ -297,13 +299,20 @@ class QuizletWindow(QWidget):
         self.box_upper.addSpacing(20)
         self.box_upper.addLayout(self.box_right)
 
-        # results label
+        # results label and FAQ button
         self.label_results = QLabel(
             "\r\n<i>Example: https://quizlet.com/150875612/usmle-flash-cards/</i>")
+        self.button_faq = QPushButton("FAQ", self)
+        self.button_faq.clicked.connect(self.onFaq)
+
+        self.box_results = QHBoxLayout()
+        self.box_results.addWidget(self.label_results)
+        self.box_results.addStretch()
+        self.box_results.addWidget(self.button_faq)
 
         # add all widgets to top layout
         self.box_top.addLayout(self.box_upper)
-        self.box_top.addWidget(self.label_results)
+        self.box_top.addLayout(self.box_results)
         self.box_top.addStretch(1)
         self.setLayout(self.box_top)
 
@@ -325,6 +334,9 @@ class QuizletWindow(QWidget):
         webbrowser.open(
             "https://quizlet.com/{}/flashcards".format(quizletDeckID))
 
+    def onFaq(self):
+        webbrowser.open(
+            "https://github.com/sviatoslav-lebediev/anki-quizlet-importer-extended/wiki/FAQ")
 
     def getQuizletDeckID(self):
         # grab url input
