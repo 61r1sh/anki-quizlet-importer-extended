@@ -227,6 +227,7 @@ Note: 'Page html' does not support Quizlet folder import
         self.box_download_audio = QHBoxLayout()
         self.value_download_audio = QCheckBox("", self)
         self.label_download_audio = QLabel("Download audio:")
+        self.value_download_audio.toggle()
         self.label_download_audio.setMinimumWidth(100)
         self.box_download_audio.addWidget(self.label_download_audio)
         self.box_download_audio.addWidget(self.value_download_audio)
