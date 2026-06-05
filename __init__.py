@@ -41,6 +41,7 @@ import os
 import sys
 import logging
 import urllib
+from http.cookies import SimpleCookie
 try:
     import urllib2
     URLError = urllib2.URLError
@@ -92,6 +93,20 @@ context.verify_mode = ssl.CERT_NONE
 urllib2.install_opener(urllib2.build_opener(urllib2.HTTPSHandler(context=context)))
 
 public_api_key = '0b8aa35d-b521-4fe0-bf0e-2ae07d826acf'
+
+
+def get_cookies():
+    config = mw.addonManager.getConfig(__name__)
+
+    if config.get("qlts"):
+        return {"qlts": config["qlts"]}
+
+    if config.get("cookies"):
+        cookie_parser = SimpleCookie()
+        cookie_parser.load(config["cookies"])
+        return {key: morsel.value for key, morsel in cookie_parser.items()}
+
+    return {}
 
 # add custom model if needed
 def addCustomModel(col):
@@ -562,7 +577,7 @@ Note: 'Page html' does not support Quizlet folder import
         while True:
             try:
                 return download_media(url, file_name, request_headers)
-            except (urllib2.HTTPError, URLError) as e:
+            except (urllib2.HTTPError, URLError, TLS_HTTP_ERROR) as e:
                 if fallback and not fallback_call:
                     fallback_call = True
                     url = "https://quizlet-proxy.proto.click/quizlet-media?url={0}".format(urllib.parse.quote(url))
@@ -580,11 +595,13 @@ Note: 'Page html' does not support Quizlet folder import
 
 
 def download_media (url, file_name, headers):
-    r = urllib2.urlopen(urllib2.Request(url, headers=headers))
-
-    if r.getcode() == 200:
+    cookies = get_cookies()
+    r = tls_get(url, tls_identifier=TLS_IDENTIFIER, headers=headers, cookies=cookies)
+    status_code = r.status_code if hasattr(r, "status_code") else r.getcode()
+    if status_code == 200:
+        body = r.content if hasattr(r, "content") else r.read()
         with open(mw.col.media.dir() + "/" + file_name, 'wb') as f:
-            f.write(r.read())
+            f.write(body)
     return file_name
 
 def parseTextItem(item):
@@ -697,16 +714,7 @@ class QuizletDownloader(QThread):
         while True:
             try:
                 r = None
-                config = mw.addonManager.getConfig(__name__)
-                cookies = {}
-
-                if config["qlts"]:
-                    cookies = {"qlts": config["qlts"]}
-                elif config["cookies"]:
-                    from http.cookies import SimpleCookie
-                    C = SimpleCookie()
-                    C.load(config["cookies"])
-                    cookies = {key: morsel.value for key, morsel in C.items()}
+                cookies = get_cookies()
 
                 page_html = ''
 
